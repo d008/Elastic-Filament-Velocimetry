@@ -1,7 +1,7 @@
 
 %%
-load('/Users/Matt/Dropbox/Elastic Filament Velocimetry/Mafu Numerical/ExpDataCompiled.mat')
-load('/Users/Matt/Dropbox/Elastic Filament Velocimetry/EFV Confocal Data/ExperimentDataAfter.mat')
+%%%%load('/Users/Matt/Dropbox/Elastic Filament Velocimetry/Mafu Numerical/ExpDataCompiled.mat')
+%%%%load('/Users/Matt/Dropbox/Elastic Filament Velocimetry/EFV Confocal Data/ExperimentDataAfter.mat')
 
 %load('C:\Users\Matt\Dropbox\Elastic Filament Velocimetry\Experimental Data\For real data now\750x8both.mat')
 L = 840E-6;             %Length of wire in m
