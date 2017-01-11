@@ -5,7 +5,7 @@ EFV_Simulation_Header
 fluid = air;      %set fluid
 material = constantan;      %set wire material
 wire = r750x4;    %set the wire geometry
-U = 6;            %set the velocity
+U = 10;            %set the velocity
 
 %SET flexural part: 1 for include, 0 to exclude
 flex = true;
