@@ -11,7 +11,7 @@ U = 10;            %set the velocity
 flex = true;
 record = false;
 eps0=10^(-4);       %set pretension
-N = 20;             %
+N = 30;             %
 
 L = wire.L; L0 = wire.L0;th =wire.th;w= wire.w;A=wire.A;I=wire.I;
 rho_s = material.rho;E=material.E;
