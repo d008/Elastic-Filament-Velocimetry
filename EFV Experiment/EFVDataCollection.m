@@ -121,3 +121,5 @@ fclose(LCR);
 fclose(SCALE);
 clear formatString i MASS LCR SCALE N
 save(filename,'IAC','R','M','t')
+%fprintf(E4980AL, sprintf(':CURRent:LEVel %g', 0.0001));
+%fprintf(E4980AL, sprintf(':FREQuency:CW %g', 300000.0));
