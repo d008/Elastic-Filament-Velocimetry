@@ -13,8 +13,8 @@ constantan = struct('is','solid','rho',8.9e3,'E',162E9,'TCR',8E-6,'rho_R',5e-7);
 th =150e-9;
 
 %Common Wire Geometries
-for l = [375,535,750]
-    for w = [4,8]
+for l = [60,375,535,750]
+    for w = [2,4,8]
         %Geomtry w/o triangles
         v = genvarname(sprintf('r%dx%d',l,w));
         ans  =struct('L',l/(10^6),'L0',l/(10^6),'th',th,'w',(w-1.5)/(10^6),...
@@ -24,6 +24,11 @@ for l = [375,535,750]
         v = genvarname(sprintf('efv%dx%d',l,w));
         ans  =struct('L',l/(10^6),'L0',l*1.12/(10^6),'th',150e-9,'w',(w-1.5)/(10^6),...
             'A',th*(w-1.5)/(10^6),'I',th.^3*(w-1.5)/(10^6)/12);
+        eval([ v '=ans;']);
+        %Geomtry w stubs
+        v = genvarname(sprintf('n%dx%d',l,w));
+        ans  =struct('L',l/(10^6),'L0',l*3/(10^6),'th',150e-9,'w',(w)/(10^6),...
+            'A',th*(w)/(10^6),'I',th.^3*(w)/(10^6)/12);
         eval([ v '=ans;']);
     end
 end

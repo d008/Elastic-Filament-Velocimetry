@@ -2,16 +2,16 @@
 function [trecord, eps] = EFVMain()
 EFV_Simulation_Header
 %% Velocity
-fluid = air;      %set fluid
-material = constantan;      %set wire material
-wire = r750x4;    %set the wire geometry
-U = 10;            %set the velocity
+fluid = water;      %set fluid
+material = pt;      %set wire material
+wire = n60x2;    %set the wire geometry
+U = 0.5;            %set the velocity
 
 %SET flexural part: 1 for include, 0 to exclude
 flex = true;
-record = false;
+record = true;
 eps0=10^(-4);       %set pretension
-N = 21;             %
+N = 51;             %
 
 L = wire.L; L0 = wire.L0;th =wire.th;w= wire.w;A=wire.A;I=wire.I;
 rho_s = material.rho;E=material.E;
@@ -30,7 +30,7 @@ urecord = u;trecord =0;eps = 0;
 
 %Width Profile
 W = x; W(abs(x)<=L0/L) = 1;W(abs(x)>L0/L) = (abs(x(abs(x)>L0/L)*L/L0)-1)*10+1;
-
+W = x; W(abs(x)<=L0/L) = 1;W(abs(x)>L0/L) = 25;
 %% Approximate Steady State Solutions
 Cd = cdV(w*U*rho_f/mu);     %Steady state Cd
 q = Cd*U*mu;            %Load per unit span
@@ -64,7 +64,7 @@ zeta = sqrt(3/(E*rho_s))*Cd*L^2*mu/(16*A*delta);
 freqResp = (4/(omega0*zeta))^(-1);
 
 T=2/zeta;
-dt =(1-cos(1/N*pi));
+dt =(1-cos(1/N*pi))/N;
 
 T0 = eps0*((L/2)^2/delta^2); %Tension is negative
 
