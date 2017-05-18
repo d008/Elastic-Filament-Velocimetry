@@ -1,17 +1,18 @@
 %% Execute Header
-function [trecord, eps] = EFVMain()
+%function [trecord, eps] = EFVMain()
+clear all
 EFV_Simulation_Header
 %% Velocity
 fluid = water;      %set fluid
 material = pt;      %set wire material
 wire = n60x2;    %set the wire geometry
-U = 0.5;            %set the velocity
+U = 0.35;            %set the velocity
 
 %SET flexural part: 1 for include, 0 to exclude
-flex = true;
-record = true;
-eps0=10^(-4);       %set pretension
-N = 51;             %
+flex = 1;
+record = 1;
+eps0=1e-16;       %set pretension
+N = 11;             %
 
 L = wire.L; L0 = wire.L0;th =wire.th;w= wire.w;A=wire.A;I=wire.I;
 rho_s = material.rho;E=material.E;
@@ -63,8 +64,8 @@ omega0 = 8*(delta)/L^2*sqrt(E/(3*rho_s));
 zeta = sqrt(3/(E*rho_s))*Cd*L^2*mu/(16*A*delta);
 freqResp = (4/(omega0*zeta))^(-1);
 
-T=2/zeta;
-dt =(1-cos(1/N*pi))/N;
+T=4/zeta;
+dt =(1-cos(1/N*pi))/N*3;
 
 T0 = eps0*((L/2)^2/delta^2); %Tension is negative
 
@@ -72,8 +73,8 @@ T0 = eps0*((L/2)^2/delta^2); %Tension is negative
 sigma=@(t,u,v) ((-trapz(x*L/2,sqrt(1+(D*u*delta/L*2).^2))./(L)-1)*(L/2)^2/delta^2)-T0;
 V =@(t) t*0+1;%(-cos(t)+1)/2+(-cos(t/3)+1)/2+1;%(square((t+dt)/10)+1)/2%
 fu = @(t,u,v) v;
-fv= @(t,u,v) (-R2*D2*(D2*(u).*W)+...
-    sigma(t,u,v)*R1*D2*u./W+...
+fv= @(t,u,v) (-R2*D2*(D2*(u))+...
+    sigma(t,u,v).*R1.*(D2*u)+...
     R3*(V(t)-R4*v).*cdV(abs((V(t)-v).*U.*rho_f.*W.*w./mu))./Cd)+...
     R5*(V(t+dt)-V(t-dt))/(dt*2);
 
@@ -159,17 +160,18 @@ end
 test = real(EPS(cdV(w.*U.*V(trecord./time).*rho_f./mu).*U.*V(trecord./time)*mu*L*3/(E*A),eps0*2*4^(1/3))-...
     EPS(0,eps0*2*4^(1/3)));
 skip =10;
-for i = 1:length(trecord)/skip-1
+for i = 1:floor(length(trecord)/100):length(trecord)-1
+
     figure(1)
     subplot(2,1,1)
     %plot(x*10^6,(delta2)*(1-(x/L*2).^2)*10^6,'--')
-    plot(x*10^6,urecord(:,i*skip)*10^6,'-*')
+    plot(x*10^6,urecord(:,i)*10^6,'-*')
     hold on
     plot(x*10^6,sqrt((0.3467*(q*L/(E*A))^(2/3))*3/8*L^2).*(1-(2*x./L).^2)*10^6,':')
     hold off
     xlabel('x (microns)')
     ylabel('\delta (microns)')
-    title(strcat('t=',int2str(trecord(i*skip)*10^6),'microsec'))
+    title(strcat('t=',int2str(trecord(i)*10^6),'microsec'))
     %axis([-L/2*10^6 L/2*10^6 0 1.5*delta*10^6*max(u)])
     set(gca,'FontSize',24)
     subplot(2,1,2)
@@ -178,7 +180,7 @@ for i = 1:length(trecord)/skip-1
     xlabel('Time (sec)')
     set(gca,'FontSize',24)
     hold on
-    plot(trecord(i*skip),eps(i*skip),'o')
+    plot(trecord(i),eps(i),'o')
     plot(trecord,test,'-')
     hold off
     drawnow

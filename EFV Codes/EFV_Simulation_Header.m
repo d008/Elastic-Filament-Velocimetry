@@ -27,7 +27,7 @@ for l = [60,375,535,750]
         eval([ v '=ans;']);
         %Geomtry w stubs
         v = genvarname(sprintf('n%dx%d',l,w));
-        ans  =struct('L',l/(10^6),'L0',l*3/(10^6),'th',150e-9,'w',(w)/(10^6),...
+        ans  =struct('L',2.6666*l/(10^6),'L0',l/(10^6),'th',150e-9,'w',(w)/(10^6),...
             'A',th*(w)/(10^6),'I',th.^3*(w)/(10^6)/12);
         eval([ v '=ans;']);
     end
