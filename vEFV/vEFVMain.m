@@ -1,23 +1,22 @@
 %% Execute Header
 %function [trecord, eps] = EFVMain()
-clear all
 EFV_Simulation_Header
-%% Velocity
+% Velocity
 fluid = water;      %set fluid
 material = pt;      %set wire material
-wire = n60x2;    %set the wire geometry
-U = 1;            %set the velocity
+wire = n60x4;    %set the wire geometry
+U = 0.05;            %set the velocity
 
 %SET flexural part: 1 for include, 0 to exclude
 flex = 1;
-record = 1;
-eps0=1e-16;       %set pretension
-N = 41;             %
+record = false;
+eps0=10^(-14);       %set pretension
+N = 31;             %
 
 L = wire.L; L0 = wire.L0;th =wire.th;w= wire.w;A=wire.A;I=wire.I;
 rho_s = material.rho;E=material.E;
 mu = fluid.mu; rho_f = fluid.rho;
-%% Domain Parameters
+% Domain Parameters
 %Make Grid
 [x,D,aa,ind] = chebyGridMaker(N,flex);
 
@@ -30,14 +29,24 @@ u = 0*x;v = x*0;
 urecord = u;trecord =0;eps = 0;
 
 %Width Profile
-W = x; W(abs(x)<=L0/L) = 1;W(abs(x)>L0/L) = (abs(x(abs(x)>L0/L)*L/L0)-1)*10+1;
-W = x; W(abs(x)<=L0/L) = 1;W(abs(x)>L0/L) = 25;
+if wire.type=='efv'
+    W = x; W(abs(x)<=L0/L) = 1;W(abs(x)>L0/L) = (abs(x(abs(x)>L0/L)*L/L0)-1)*10+1;
+elseif wire.type=='n'
+    W = x; W(abs(x)<=L0/L) = 1;W(abs(x)>L0/L) = 25;
+else
+    W = x./x;
+end
+
+plot(-x/2,W,'-o');
+Amod = 1./trapz(-x/2,1./W)
 %% Approximate Steady State Solutions
 Cd = cdV(w*U*rho_f/mu);     %Steady state Cd
 q = Cd*U*mu;            %Load per unit span
-Cm = 2;
+qmod = trapz(-x*L/2,cdV(w.*W*U*rho_f/mu)*U*mu)/L./(q)            %Load per unit span
 
-Hu = 3.*q.*L./(E*A);
+Cm = 0;
+
+Hu = 3.*q.*qmod.*L./(E*Amod*A);
 Q = @(HU, SP0) (HU+sqrt(HU.^2-SP0.^3)).^(1/3);
 DELT = @(Hu,sp0) 2.^(2/3)./8.*L.*(sp0./Q(Hu,sp0)+Q(Hu,sp0));
 EPS = @(Hu,sp0) 8/3.*DELT(Hu,sp0).^2./L^2 ;
@@ -48,35 +57,43 @@ time = sqrt(rho_s*(L/2)^4/(E*delta^2));
 
 %Scaling Parameters of individual terms
 %Elastic-Axial Force
-R1 = E*delta^2*time^2/((rho_s+rho_f*Cm)*(L/2)^4);
+R1 = 1;
 %Flexural Rigidity
-R2 = E*I*time^2/((rho_s+rho_f*Cm)*A*(L/2)^4) * flex;
+R2 = I/(A*delta^2) * flex;
 %Forcings
-R3 = Cd*mu*U*time^2/((rho_s+rho_f*Cm)*A*delta);
+R3 = 1;
 %Damping
 R4 = delta/(U*time);
 %Added Mass
-R5 = rho_s*Cm*U*time/((rho_s+rho_f*Cm)*delta)*0;
+%R5 = rho_s*Cm*U*time/((rho_s+rho_f*Cm)*delta)*0;
 
 %%
+clf
 %Linearized Parameters
+
 omega0 = 8*(delta)/L^2*sqrt(E/(3*rho_s));
 zeta = sqrt(3/(E*rho_s))*Cd*L^2*mu/(16*A*delta);
 freqResp = (4/(omega0*zeta))^(-1);
+freqResp2 = 1./(rho_s*A./(Cd*mu));
 
-T=4/zeta;
-dt =(1-cos(1/N*pi))/N*3;
+T=50/zeta;
+dt =(1-cos(1/N*pi))/2;
 
 T0 = eps0*((L/2)^2/delta^2); %Tension is negative
 
 %Computational Functions
-sigma=@(t,u,v) ((-trapz(x*L/2,sqrt(1+(D*u*delta/L*2).^2))./(L)-1)*(L/2)^2/delta^2)-T0;
+%sigma=@(t,u,v) Amod*((-trapz(x*L/2,sqrt(1+(D*u*delta/L*2).^2))./(L)-1)*(L/2)^2/delta^2)-T0;
+sigma=@(t,u,v) Amod*(-trapz(x/2,(D*u).^2)/2)-T0*Amod;
+
 V =@(t) t*0+1;%(-cos(t)+1)/2+(-cos(t/3)+1)/2+1;%(square((t+dt)/10)+1)/2%
 fu = @(t,u,v) v;
 fv= @(t,u,v) (-R2*D2*(D2*(u))+...
-    sigma(t,u,v).*R1.*(D2*u)+...
-    R3*(V(t)-R4*v).*cdV(abs((V(t)-v).*U.*rho_f.*W.*w./mu))./Cd)+...
-    R5*(V(t+dt)-V(t-dt))/(dt*2);
+    sigma(t,u,v)*R1*(D2*u)./W+...
+    R3*(V(t)-R4*v).*cdV(abs((V(t)-v).*U.*rho_f.*W.*w./mu))./Cd)./W;
+
+% fv= @(t,u,v) (-R2*D2*(D2*(u))+...
+%     sigma(t,u,v)*R1*(D2*u)./W+...
+%     R3*(V(t)-R4*v).*cdV(abs((V(t)-v).*U.*rho_f.*W.*w./mu))./Cd)./W;
 
 %Set the inital deflection
 delta2 = real(DELT(0,eps0*2*4^(1/3)));
@@ -141,37 +158,40 @@ for t=0:dt:T
     urecord = [urecord,u];
     trecord = [trecord,t*time];
     sigma(t,u,v);
-
+    
 end
 close(h)
 urecord = urecord*delta;
 x = x*L/2;
 
 
-model = [real(DELT(Hu,eps0*2*4^(1/3))-DELT(0,eps0*2*4^(1/3)))*10^6,real(EPS(Hu,eps0*2*4^(1/3))-EPS(0,eps0*2*4^(1/3)))*10^4]
-simluation = [(max(u)*delta-delta2)*10^6,(eps(end)-eps(1))*10^4]
+model_delt = real(DELT(Hu,eps0*2*4^(1/3))-DELT(0,eps0*2*4^(1/3)))*10^6
+simluation_delt = (max(u)*delta-delta2)*10^6
+model_eps=real(EPS(Hu,eps0*2*4^(1/3))-EPS(0,eps0*2*4^(1/3)))*10^4
+simulation_eps=(eps(end)-eps(1))*10^4
+
+
 toc
 
 %% Post Process
-if record
+if record;
     vidObj = VideoWriter('temp.avi');
     open(vidObj);
 end
 test = real(EPS(cdV(w.*U.*V(trecord./time).*rho_f./mu).*U.*V(trecord./time)*mu*L*3/(E*A),eps0*2*4^(1/3))-...
     EPS(0,eps0*2*4^(1/3)));
 skip =10;
-for i = 1:floor(length(trecord)/100):length(trecord)-1
-
+for i = 1:length(trecord)/skip-1;
     figure(1)
     subplot(2,1,1)
     %plot(x*10^6,(delta2)*(1-(x/L*2).^2)*10^6,'--')
-    plot(x*10^6,urecord(:,i)*10^6,'-*')
+    plot(x*10^6,urecord(:,i*skip)*10^6,'-*')
     hold on
-    plot(x*10^6,sqrt((0.3467*(q*L/(E*A))^(2/3))*3/8*L^2).*(1-(2*x./L).^2)*10^6,':')
+    plot(x*10^6,sqrt((0.3467*(q*qmod*L/(E*A*Amod))^(2/3))*3/8*L^2).*(1-(2*x./L).^2)*10^6,':')
     hold off
     xlabel('x (microns)')
     ylabel('\delta (microns)')
-    title(strcat('t=',int2str(trecord(i)*10^6),'microsec'))
+    title(strcat('t=',int2str(trecord(i*skip)*10^6),'microsec'))
     %axis([-L/2*10^6 L/2*10^6 0 1.5*delta*10^6*max(u)])
     set(gca,'FontSize',24)
     subplot(2,1,2)
@@ -180,8 +200,8 @@ for i = 1:floor(length(trecord)/100):length(trecord)-1
     xlabel('Time (sec)')
     set(gca,'FontSize',24)
     hold on
-    plot(trecord(i),eps(i),'o')
-    plot(trecord,test,'-')
+    plot(trecord(i*skip),eps(i*skip),'o')
+    plot(trecord,test*10^-4,'-')
     hold off
     drawnow
     pause(0.001)
